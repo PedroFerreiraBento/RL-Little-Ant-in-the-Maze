@@ -1,0 +1,10 @@
+{
+  "grid": {
+    "cols": 31,
+    "rows": 21,
+    "cell_size": 32
+  },
+  "rng_seed": null,
+  "start": [1, 1],
+  "exit": [29, 19]
+}

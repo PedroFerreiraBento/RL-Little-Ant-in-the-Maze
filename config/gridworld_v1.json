@@ -1,0 +1,17 @@
+{
+  "grid": {
+    "cols": 11,
+    "rows": 11
+  },
+  "start": [1, 1],
+  "goal": [9, 9],
+  "randomize_start_neighbors": false,
+  "max_steps": 200,
+  "layout": "corridor",
+  "rewards": {
+    "step": -1,
+    "goal": 10,
+    "collision": 0
+  },
+  "gamma": 0.95
+}
