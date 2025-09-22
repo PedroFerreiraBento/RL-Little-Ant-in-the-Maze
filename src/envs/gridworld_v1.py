@@ -32,6 +32,7 @@ class GridCfg:
     gamma: float = 0.95
     layout: Optional[str] = None  # e.g., "corridor"
     walls: Optional[List[Tuple[int, int]]] = None  # interior walls
+    rng_seed: Optional[int] = None
 
 
 class GridworldV1:
@@ -51,25 +52,11 @@ class GridworldV1:
         self.rew = cfg.rewards
         self._t = 0
         self._pos = cfg.start
+        # RNG
+        self.rng = np.random.default_rng(self.cfg.rng_seed)
         # Build interior walls set
         self.walls: Set[Tuple[int, int]] = set()
-        if cfg.layout == "corridor":
-            cy = self.rows // 2
-            for y in range(1, self.rows - 1):
-                for x in range(1, self.cols - 1):
-                    if y != cy:
-                        self.walls.add((x, y))
-            # Ensure start/goal lie on corridor row
-            sx, sy = self.cfg.start
-            gx, gy = self.cfg.goal
-            self.cfg.start = (1, cy)
-            self.cfg.goal = (self.cols - 2, cy)
-            self._pos = self.cfg.start
-        elif cfg.walls:
-            # Accept provided walls list, but clip to interior
-            for x, y in cfg.walls:
-                if 1 <= x < self.cols - 1 and 1 <= y < self.rows - 1:
-                    self.walls.add((x, y))
+        self._build_walls()
 
     @staticmethod
     def from_json(path: Path) -> "GridworldV1":
@@ -86,8 +73,87 @@ class GridworldV1:
             gamma=float(data.get("gamma", 0.95)),
             layout=data.get("layout"),
             walls=[tuple(p) for p in data.get("walls", [])],
+            rng_seed=data.get("rng_seed"),
         )
         return GridworldV1(gc)
+
+    # --- Walls generation helpers ---
+    def _build_walls(self) -> None:
+        self.walls.clear()
+        if self.cfg.layout == "corridor":
+            cy = self.rows // 2
+            for y in range(1, self.rows - 1):
+                for x in range(1, self.cols - 1):
+                    if y != cy:
+                        self.walls.add((x, y))
+            # Start/goal aligned to corridor
+            self.cfg.start = (1, cy)
+            self.cfg.goal = (self.cols - 2, cy)
+            self._pos = self.cfg.start
+        elif self.cfg.layout == "maze":
+            self._generate_maze_walls()
+            # Place start/goal on passages
+            s = (1, 1)
+            g = (self.cols - 2, self.rows - 2)
+            passages = self._passages_cache
+            if s not in passages:
+                s = next(iter(passages))
+            if g not in passages:
+                # choose farthest from start by Manhattan
+                sx, sy = s
+                g = max(passages, key=lambda xy: abs(xy[0] - sx) + abs(xy[1] - sy))
+            self.cfg.start, self.cfg.goal = s, g
+            self._pos = self.cfg.start
+        elif self.cfg.walls:
+            for x, y in self.cfg.walls:
+                if 1 <= x < self.cols - 1 and 1 <= y < self.rows - 1:
+                    self.walls.add((x, y))
+
+    def _generate_maze_walls(self) -> None:
+        # Recursive backtracker on odd cells
+        cols, rows = self.cols, self.rows
+        visited: Set[Tuple[int, int]] = set()
+        passages: Set[Tuple[int, int]] = set()
+        def neighbors(cell: Tuple[int, int]) -> List[Tuple[int, int]]:
+            x, y = cell
+            cand = [(x+2,y),(x-2,y),(x,y+2),(x,y-2)]
+            return [(nx,ny) for nx,ny in cand if 1 <= nx < cols-1 and 1 <= ny < rows-1 and (nx%2==1 and ny%2==1)]
+
+        # Initialize all interior as walls; passages will be carved
+        for y in range(1, rows-1):
+            for x in range(1, cols-1):
+                self.walls.add((x,y))
+
+        # Pick starting odd cell
+        odd_cells = [(x,y) for y in range(1, rows-1) for x in range(1, cols-1) if x%2==1 and y%2==1]
+        start = (1,1) if (1,1) in odd_cells else odd_cells[0]
+        stack = [start]
+        visited.add(start)
+        passages.add(start)
+        self.walls.discard(start)
+
+        while stack:
+            cur = stack[-1]
+            nbrs = [n for n in neighbors(cur) if n not in visited]
+            if not nbrs:
+                stack.pop()
+                continue
+            n = nbrs[int(self.rng.integers(0, len(nbrs)))]
+            # carve wall between cur and n
+            wx = (cur[0] + n[0]) // 2
+            wy = (cur[1] + n[1]) // 2
+            for cell in [n, (wx, wy)]:
+                passages.add(cell)
+                self.walls.discard(cell)
+            visited.add(n)
+            stack.append(n)
+
+        # cache passages for start/goal placement
+        self._passages_cache = passages
+
+    def regenerate_walls(self) -> None:
+        if self.cfg.layout in {"maze", "corridor"}:
+            self._build_walls()
 
     # --- API ---
     def reset(self, rng: np.random.Generator | None = None) -> Tuple[int, int]:

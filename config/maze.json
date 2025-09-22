@@ -6,5 +6,6 @@
   },
   "rng_seed": null,
   "start": [1, 1],
-  "exit": [29, 19]
+  "exit": [29, 19],
+  "random_exit": false
 }
