@@ -1,0 +1,9 @@
+{
+  "app": {
+    "title": "RL Template App",
+    "width": 1024,
+    "height": 640,
+    "show_overlay": true
+  },
+  "rng_seed": 123
+}

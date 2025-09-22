@@ -1,0 +1,3 @@
+# Python 3.12 focused environment
+arcade==3.0.0
+numpy>=2.0,<3
