@@ -1,0 +1,22 @@
+{
+  "episodes": 600,
+  "alpha": 0.5,
+  "epsilon": 0.8,
+  "epsilon_min": 0.05,
+  "epsilon_decay": 0.992,
+  "max_steps": 300,
+  "state_action_repeat_penalty": 0.03,
+  "state_action_repeat_penalty_power": 1.6,
+  "state_action_repeat_penalty_mode": "global",
+  "anti_backtrack_cost": 0.1,
+  "use_orientation_state": true,
+  "edge_repeat_cost": 0.4,
+  "edge_repeat_cost_power": 1.0,
+  "edge_repeat_cost_mode": "episode",
+  "selection_state_novel_coeff": 0.25,
+  "selection_state_novel_power": 1.0,
+  "selection_state_novel_mode": "episode",
+  "selection_sa_novel_coeff": 0.35,
+  "selection_sa_novel_power": 1.0,
+  "selection_sa_novel_mode": "episode"
+}

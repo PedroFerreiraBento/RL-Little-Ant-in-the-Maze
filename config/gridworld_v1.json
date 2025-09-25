@@ -1,17 +1,20 @@
 {
   "grid": {
-    "cols": 30,
-    "rows": 30
+    "cols": 27,
+    "rows": 23
   },
   "start": [1, 1],
-  "goal": [29, 29],
+  "goal": [25, 21],
   "randomize_start_neighbors": false,
-  "max_steps": 200,
+  "max_steps": 400,
   "layout": "corridor",
+  "method": "vi",
+  "method_config": "config/methods/sarsa.json",
   "rewards": {
     "step": -1,
     "goal": 10,
     "collision": -5
   },
-  "gamma": 0.95
+  "gamma": 0.95,
+  "rng_seed": 123
 }
